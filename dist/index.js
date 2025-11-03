@@ -3243,32 +3243,9 @@ function getServerFiles(client, logger, timings, args) {
                 throw new Error("dangerous-clean-slate was run");
             }
             const serverFiles = yield downloadFileList(client, logger, args["state-name"]);
-
-            const generatedTime = new Date(serverFiles.generatedTime);
-            function getOrdinalSuffix(date) {
-                const day = date.getDate();
-                if (day >= 11 && day <= 13) {
-                    return 'th';
-                }
-                switch (day % 10) {
-                    case 1: return 'st';
-                    case 2: return 'nd';
-                    case 3: return 'rd';
-                    default: return 'th';
-                }
-            }
-            function formatTimeWithAmPm(date) {
-                let hours = date.getHours();
-                const minutes = date.getMinutes();
-                const period = hours >= 12 ? 'pm' : 'am';
-                hours = hours % 12 || 12;
-                return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
-            }
-            const formattedDate = `${generatedTime.getDate()}${getOrdinalSuffix(generatedTime)} ${generatedTime.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'Europe/London' })}`;
-            const formattedTime = formatTimeWithAmPm(generatedTime);
-            logger.all(`Last updated: ${formattedDate} - ${formattedTime}`);
-
-            // Apply exclude options to server
+            logger.all(`----------------------------------------------------------------`);
+            logger.all(`Last published on 📅 ${new Date(serverFiles.generatedTime).toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric" })}`);
+            // apply exclude options to server
             if (args.exclude.length > 0) {
                 const filteredData = serverFiles.data.filter((item) => (0, utilities_1.applyExcludeFilter)({ path: item.name, isDirectory: () => item.type === "folder" }, args.exclude));
                 serverFiles.data = filteredData;
@@ -3295,6 +3272,12 @@ function deploy(args, logger, timings) {
     return __awaiter(this, void 0, void 0, function* () {
         timings.start("total");
         // header
+        logger.all(`----------------------------------------------------------------`);
+        logger.all(`🚀 Thanks for using ftp-deploy. Let's deploy some stuff!   `);
+        logger.all(`----------------------------------------------------------------`);
+        logger.all(`If you found this project helpful, please support it`);
+        logger.all(`by giving it a ⭐ on Github --> https://github.com/SamKirkland/FTP-Deploy-Action`);
+        logger.all(`or add a badge 🏷️ to your projects readme --> https://github.com/SamKirkland/FTP-Deploy-Action#badge`);
         logger.verbose(`Using the following excludes filters: ${JSON.stringify(args.exclude)}`);
         timings.start("hash");
         const localFiles = yield (0, localFiles_1.getLocalFiles)(args);
@@ -3317,6 +3300,8 @@ function deploy(args, logger, timings) {
             logger.standard(`----------------------------------------------------------------`);
             logger.standard(`Local Files:\t${(0, utilities_1.formatNumber)(localFiles.data.length)}`);
             logger.standard(`Server Files:\t${(0, utilities_1.formatNumber)(serverFiles.data.length)}`);
+            logger.standard(`----------------------------------------------------------------`);
+            logger.standard(`Calculating differences between client & server`);
             logger.standard(`----------------------------------------------------------------`);
             const diffs = diffTool.getDiffs(localFiles, serverFiles);
             diffs.upload.filter((itemUpload) => itemUpload.type === "folder").map((itemUpload) => {
@@ -3360,13 +3345,15 @@ function deploy(args, logger, timings) {
         }
         const uploadSpeed = (0, pretty_bytes_1.default)(totalBytesUploaded / (timings.getTime("upload") / 1000));
         // footer
-        logger.all(`Stats:`);
-        logger.all(`  - Hashing: ${timings.getTimeFormatted("hash")}`);
-        logger.all(`  - Connecting: ${timings.getTimeFormatted("connecting")}`);
-        logger.all(`  - Deploying: ${timings.getTimeFormatted("upload")} (${uploadSpeed}/second)`);
-        logger.all(`    - Changing dirs: ${timings.getTimeFormatted("changingDir")}`);
-        logger.all(`    - Logging: ${timings.getTimeFormatted("logging")}`);
-        logger.all(`Total: ${timings.getTimeFormatted("total")}`);
+        logger.all(`----------------------------------------------------------------`);
+        logger.all(`Time spent hashing: ${timings.getTimeFormatted("hash")}`);
+        logger.all(`Time spent connecting to server: ${timings.getTimeFormatted("connecting")}`);
+        logger.all(`Time spent deploying: ${timings.getTimeFormatted("upload")} (${uploadSpeed}/second)`);
+        logger.all(`  - changing dirs: ${timings.getTimeFormatted("changingDir")}`);
+        logger.all(`  - logging: ${timings.getTimeFormatted("logging")}`);
+        logger.all(`----------------------------------------------------------------`);
+        logger.all(`Total time: ${timings.getTimeFormatted("total")}`);
+        logger.all(`----------------------------------------------------------------`);
     });
 }
 exports.deploy = deploy;
@@ -3639,7 +3626,7 @@ class FTPSyncProvider {
                 }
                 catch (e) {
                     // this error is common when a file was deleted on the server directly
-                    if (e.code === types_1.ErrorCode.FileNotFoundOrNoAccess) {
+                    if ((e === null || e === void 0 ? void 0 : e.code) === types_1.ErrorCode.FileNotFoundOrNoAccess) {
                         this.logger.standard("File not found or you don't have access to the file - skipping...");
                     }
                     else {
@@ -3656,7 +3643,17 @@ class FTPSyncProvider {
             const absoluteFolderPath = "/" + (this.serverPath.startsWith("./") ? this.serverPath.replace("./", "") : this.serverPath) + folderPath;
             this.logger.all(`removing folder "${absoluteFolderPath}"`);
             if (this.dryRun === false) {
-                yield (0, utilities_1.retryRequest)(this.logger, () => __awaiter(this, void 0, void 0, function* () { return yield this.client.removeDir(absoluteFolderPath); }));
+                try {
+                    yield (0, utilities_1.retryRequest)(this.logger, () => __awaiter(this, void 0, void 0, function* () { return yield this.client.removeDir(absoluteFolderPath); }));
+                }
+                catch (e) {
+                    if ((e === null || e === void 0 ? void 0 : e.code) === types_1.ErrorCode.FileNotFoundOrNoAccess) {
+                        this.logger.standard("Directory not found or you don't have access to the file - skipping...");
+                    }
+                    else {
+                        throw e;
+                    }
+                }
             }
             this.logger.verbose(`  completed`);
         });
