@@ -3272,13 +3272,8 @@ function deploy(args, logger, timings) {
     return __awaiter(this, void 0, void 0, function* () {
         timings.start("total");
         // header
-        logger.all(`----------------------------------------------------------------`);
-        logger.all(`🚀 Thanks for using ftp-deploy. Let's deploy some stuff!   `);
-        logger.all(`----------------------------------------------------------------`);
-        logger.all(`If you found this project helpful, please support it`);
-        logger.all(`by giving it a ⭐ on Github --> https://github.com/SamKirkland/FTP-Deploy-Action`);
-        logger.all(`or add a badge 🏷️ to your projects readme --> https://github.com/SamKirkland/FTP-Deploy-Action#badge`);
-        logger.verbose(`Using the following excludes filters: ${JSON.stringify(args.exclude)}`);
+        
+        logger.verbose(`Excluded filters: ${JSON.stringify(args.exclude)}`);
         timings.start("hash");
         const localFiles = yield (0, localFiles_1.getLocalFiles)(args);
         timings.stop("hash");
