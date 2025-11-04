@@ -3244,7 +3244,7 @@ function getServerFiles(client, logger, timings, args) {
             }
             const serverFiles = yield downloadFileList(client, logger, args["state-name"]);
             logger.all(`----------------------------------------------------------------`);
-            logger.all(`Last published on 📅 ${new Date(serverFiles.generatedTime).toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric" })}`);
+            logger.all(`📅 Last commit: ${new Date(serverFiles.generatedTime).toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric" })}`);
             // apply exclude options to server
             if (args.exclude.length > 0) {
                 const filteredData = serverFiles.data.filter((item) => (0, utilities_1.applyExcludeFilter)({ path: item.name, isDirectory: () => item.type === "folder" }, args.exclude));
@@ -3705,7 +3705,6 @@ class FTPSyncProvider {
             }
 
             this.logger.all(`🎉 Sync complete!`);
-            this.logger.all(` `);
             if (this.dryRun === false) {
                 yield (0, utilities_1.retryRequest)(this.logger, () => __awaiter(this, void 0, void 0, function* () { return yield this.client.uploadFrom(this.localPath + this.stateName, this.stateName); }));
             }
